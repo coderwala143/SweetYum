@@ -1,7 +1,7 @@
 # SweetYum Backend API Documentation
 
 ## Base URL
-`/api`
+`https://sweetyum.onrender.com/api`
 
 ---
 
