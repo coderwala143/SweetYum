@@ -1,7 +1,8 @@
 const { validationResult } = require("express-validator");
 const Users = require("../models/users.models.js");
 const BlackListedToken = require("../models/blackListedToken.models.js");
-const uploadOnCloudinary = require("../utils/cloudinary.js")
+const uploadOnCloudinary = require("../utils/cloudinary.js");
+const {validatePhoneNum} = require("../utils/validatePhone.js")
 module.exports.registerUser = async (req, res, next) => {
   const errors = validationResult(req);
 
@@ -9,11 +10,13 @@ module.exports.registerUser = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
   }
   const { fullname, email, password, phoneNo, isAdmin } = req.body;
-
+  
   if(!fullname.firstname?.trim() || !email?.trim() || !password?.trim() || !phoneNo){
     return res.status(400).json({message: "All fields are Required"})
   }
   
+  //Checking For Number Is Valid
+  validatePhoneNum(phoneNo);
   
   const isAlreadyExisted = await Users.findOne({ email });
   if (isAlreadyExisted) {

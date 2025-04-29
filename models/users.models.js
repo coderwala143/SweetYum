@@ -30,7 +30,8 @@ const userSchema = mongoose.Schema({
     phoneNo:{
         type: Number,
         required: true,
-        unique: true
+        unique: true,
+        minlength: [10, "Phone Number must be at least 10 digit long"],
     },
     profilePicture: {
         type: String,
