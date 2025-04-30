@@ -70,7 +70,14 @@ module.exports.loginUser = async (req, res, next) => {
 };
 
 module.exports.userProfile = async (req, res, next) => {
-  res.status(200).json(req.user);
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await Users.findById(req.user._id).select("-password");
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  res.status(200).json(user);
 };
 
 module.exports.logoutUser = async (req, res, next) => {
