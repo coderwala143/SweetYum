@@ -37,7 +37,7 @@ module.exports.registerUser = async (req, res, next) => {
   });
 
   const token = user.generateAuthToken();
-  res.status(201).json({ token, user });
+  res.status(201).json({message: "Account Created Successfully!", user });
 };
 
 module.exports.loginUser = async (req, res, next) => {
@@ -65,7 +65,7 @@ module.exports.loginUser = async (req, res, next) => {
   }
 
   const token = user.generateAuthToken();
-  res.cookie("token", token);
+  res.cookie("token", token, {httpOnly: true, secure: true, maxAge: 24 * 60 * 60 * 1000});
   res.status(200).json({ token, user });
 };
 

@@ -114,7 +114,7 @@ module.exports.increaseQuantity = async (req, res, next) => {
         console.log(cart)
         // console.log("product Quantity",productDetails);
         await cart.save()
-        return res.status(200).json({message: "Product Quantity Decreased"})
+        return res.status(200).json({message: "Product Quantity Increased"})
     } catch (err) {
         console.log(err)
     }
