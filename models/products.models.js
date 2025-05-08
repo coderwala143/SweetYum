@@ -20,20 +20,10 @@ const productSchema = new Schema({
     required: [true, "Product price is required"],
     min: [0, "Price must be positive"],
   },
-  category: {
-    type: String,
-    required: [true, "Product category is required"],
-    enum: [,
-      "Dessert",
-      "Cake",
-      "Candy",
-      "Chocolate",
-      "Pastry",
-      "Donut",
-      "Cupcake",
-      "Macaron",
-      "Others",
-    ],
+  category:  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    required: true
   },
   stock: {
     type: Number,

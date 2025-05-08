@@ -9,6 +9,7 @@ const productRoutes = require("./routes/product.routes.js");
 const cartRoutes = require("./routes/cart.routes.js");
 const orderRoutes = require("./routes/order.routes.js");
 const ratingRoutes = require("./routes/rating.routes.js");
+const categoriesRoutes = require("./routes/categories.routes.js")
 
 app.use(cors())
 app.use(express.urlencoded({extended: true}));
@@ -20,6 +21,7 @@ app.get('/' , (req, res) => {
 })
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoriesRoutes);
 app.use("/api/carts", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/ratings", ratingRoutes);

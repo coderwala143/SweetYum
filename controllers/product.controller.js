@@ -1,6 +1,7 @@
 const Product = require("../models/products.models");
 const Cart  = require("../models/cart.models");
 const { uploadOnCloudinary } = require("../utils/cloudinary");
+const Category = require("../models/categories.models");
 
 
 module.exports.addProduct = async (req, res, next) => {
@@ -14,6 +15,7 @@ module.exports.addProduct = async (req, res, next) => {
       ratings,
       reviews,
     } = req.body;
+
     const productImageLocalPath = req.files?.productImage[0]?.path
     console.log(req.files?.productImage[0]?.path)
 
@@ -28,17 +30,23 @@ module.exports.addProduct = async (req, res, next) => {
     ) {
       return res.status(400).json({ message: "Please fill all the fields" });
     }
+    
+    const isCategory = await Category.findOne({name: category});
+    if (!isCategory) {
+      return res.status(400).json({ error: "Invalid category" });
+    }
 
     const productImage = await uploadOnCloudinary(productImageLocalPath);
     console.log(productImage)
     if(!productImage){
       return res.status(400).json({message: "Product Image Required"})
     }
+    
     const product = new Product({
       name,
       description,
       price,
-      category,
+      category: isCategory._id,
       stock,
       image: productImage.url,
       ratings,
