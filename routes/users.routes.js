@@ -27,7 +27,7 @@ router.get("/profile", authMiddleWare.authUser, userController.userProfile);
 
 router.get("/logout", authMiddleWare.authUser ,userController.logoutUser);
 
-router.delete("/delete-user/:userId", authMiddleWare.authUser, userController.deleteUser);
+router.delete("/delete-user/:userId", authMiddleWare.authUser || authMiddleWare.AdminProductAuth, userController.deleteUser);
 
 router.patch("/upload-profile", authMiddleWare.authUser , upload.fields([
     {

@@ -24,6 +24,10 @@ router.get("/getproduct", authMiddleWare.authUser, productController.getAllProdu
 // get single product using product_id
 router.get("/getproduct/:productId", authMiddleWare.authUser, productController.getProduct);
 
+router.get("/getsearchproduct", authMiddleWare.authUser, productController.searchProduct);
+
+router.get("/getcategoriesproduct/:category", authMiddleWare.authUser, productController.productByCategory);
+
 //update product details
 router.patch("/updateproduct/:productId", authMiddleWare.AdminProductAuth, upload.fields([
     {

@@ -43,15 +43,18 @@ const userSchema = mongoose.Schema({
             ref: 'Order'
         }
     ],
-    
+    refreshToken: {
+        type: String
+    },
     isAdmin: {
         type: Boolean,
-        default: false
+        default: false,
+        select: false
     }
 }, {timestamps: true})
 
 userSchema.methods.generateAuthToken = function (){
-    const token = jwt.sign({ _id: this._id }, process.env.SECRET_KEY,{expiresIn: "1h"});
+    const token = jwt.sign({ _id: this._id }, process.env.SECRET_KEY,{expiresIn: "24h"});
     return token;
 };
 

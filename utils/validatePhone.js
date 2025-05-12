@@ -6,6 +6,5 @@ const validatePhoneNum = (phone) => {
 }
 
 module.exports = {
-   
     validatePhoneNum
 }

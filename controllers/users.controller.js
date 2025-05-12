@@ -3,16 +3,19 @@ const Users = require("../models/users.models.js");
 const BlackListedToken = require("../models/blackListedToken.models.js");
 const uploadOnCloudinary = require("../utils/cloudinary.js");
 const {validatePhoneNum} = require("../utils/validatePhone.js")
-module.exports.registerUser = async (req, res, next) => {
-  const errors = validationResult(req);
+const ApiError = require("../utils/ApiError.js");
+const ApiResponse = require("../utils/ApiResponse.js");
+const asyncHandler = require("../utils/asyncHandler.js")
 
+module.exports.registerUser = asyncHandler(async (req, res, next) => {
+  const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    throw new ApiError(400, "validation failed", errors.array())
   }
   const { fullname, email, password, phoneNo, isAdmin } = req.body;
   
   if(!fullname.firstname?.trim() || !email?.trim() || !password?.trim() || !phoneNo){
-    return res.status(400).json({message: "All fields are Required"})
+    throw new ApiError(400, "All fields are required")
   }
   
   //Checking For Number Is Valid
@@ -20,7 +23,7 @@ module.exports.registerUser = async (req, res, next) => {
   
   const isAlreadyExisted = await Users.findOne({ email });
   if (isAlreadyExisted) {
-    return res.status(409).json({ message: "Email already exists" });
+    throw new ApiError(409, "Email already exists");
   }
 
   const hashedPassword = await Users.hashPassword(password);
@@ -36,83 +39,85 @@ module.exports.registerUser = async (req, res, next) => {
     isAdmin
   });
 
-  const token = user.generateAuthToken();
-  res.status(201).json({message: "Account Created Successfully!", user });
-};
+  const createdUser = await Users.findById(user._id).select("-isAdmin");
 
-module.exports.loginUser = async (req, res, next) => {
+  if(!createdUser){
+    throw new ApiError(500, "Something Went wrong while registering the user");
+  }
+
+  res.status(201).json(
+    new ApiResponse(200, createdUser, "User Created Successfully!")
+  )
+})
+
+module.exports.loginUser = asyncHandler(async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    throw new ApiError(400, "validation failed", errors.array())
   }
 
   const { email, password } = req.body;
 
   if(!email?.trim() || !password?.trim()){
-    return res.status(400).json({message: "All field are Required"})
+    throw new ApiError(400, "All field are Required!")
   }
   
   const user = await Users.findOne({ email }).select("+password");
 
   if (!user) {
-    return res.status(400).json({ message: "Invalid email or password" });
+    throw new ApiError(404, "User not exist!")
   }
+  console.log("Before password check")
 
   const isMatch = await user.comparePassword(password);
 
   if (!isMatch) {
-    return res.status(400).json({ message: "Invalid email or password" });
+    console.log("Inside password mismatch")
+    throw new ApiError(400, "Invalid email or password!")
   }
+  console.log("After password check")
 
   const token = user.generateAuthToken();
-  res.cookie("token", token, {httpOnly: true, secure: true, maxAge: 24 * 60 * 60 * 1000});
-  res.status(200).json({ token, user });
-};
+  res.cookie("token", token, {secure: true, sameSite: "none", maxAge: 24 * 60 * 60 * 1000});
+  res.status(200).json(new ApiResponse(200, user, "Login Successfully!", token));
+});
 
-module.exports.userProfile = async (req, res, next) => {
+module.exports.userProfile = asyncHandler(async (req, res, next) => {
   if (!req.user) {
-    return res.status(401).json({ message: "Unauthorized" });
+    throw new ApiError(401, "Unauthorized")
   }
   const user = await Users.findById(req.user._id).select("-password");
   if (!user) {
-    return res.status(404).json({ message: "User not found" });
+    throw new ApiError(401, "User not found")
   }
-  res.status(200).json(user);
-};
+  res.status(200).json(new ApiResponse(200, user));
+});
 
-module.exports.logoutUser = async (req, res, next) => {
-  let token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
-  res.clearCookie("token");
-  await BlackListedToken.create({ token });
-  res.status(200).json({ message: "Logged out successfully" });
-};
+module.exports.deleteUser = asyncHandler(async(req, res) => {
+  const userId = req.params.userId || req.user._id;
+  const user = await Users.findById(userId);
+  if(!user){
+      throw new ApiError(404, "User not Found!");
+  }
+  await Users.deleteOne({userId}).then(() => {
+    res.status(200).json(
+      new ApiResponse(200, user, "User Deleted Successfully!")
+    )
+  })
+})
 
-
-module.exports.deleteUser = async(req, res) => {
-    const userId = req.params.userId;
-
-    const user = await Users.findById(userId);
-
-    if(!user){
-        return res.send(404).json({message: "User Not Exists"})
-    }
-    await Users.deleteOne({userId})
-}
-
-module.exports.uploadPicture = async(req, res) => {
+module.exports.uploadPicture = asyncHandler(async(req, res) => {
   const userId = req.user._id
   console.log(req.files);
   const profilePictureLocalPath = req.files?.profilePicture[0]?.path;
   console.log(profilePictureLocalPath)
-  try{
-
   if(!profilePictureLocalPath){
-    res.status(400).json({message: "Profile Picture Required"})
+    throw new ApiError(400, "ProfilePicture file is Required")
   }
 
   const profilePicture = await uploadOnCloudinary.uploadOnCloudinary(profilePictureLocalPath);
   if(!profilePicture){
-    return res.status(400).json({message: "Profile Picture file is Required"})
+    throw new ApiError(400, "ProfilePicture file is Required")
   }
   let user = await Users.findById(userId)
   user.profilePicture = profilePicture.url;
@@ -120,11 +125,21 @@ module.exports.uploadPicture = async(req, res) => {
   await user.save().then(() => {
     console.log("Profile Picture Uploaded")
   })
-  res.status(201).json({message: "Profile Picture Uploaded Successfully", user: user });
-}catch(err){
-  console.log(err);
-  return res.status(500).json({message: "Error While Uploading Profile Picture"})
-}
-}
+
+  return res.status(201).json(
+    new ApiResponse(200, user, "Profile Picture Uploaded Successfully!")
+  )
+})
+
+module.exports.logoutUser = asyncHandler(async (req, res, next) => {
+  let token = req.cookies?.token || req.headers.authorization?.split(" ")[1];
+  const user = await Users.findById(req.user._id)
+  if(!user){
+    throw new ApiError(404, "Unauthorized")
+  }
+  res.clearCookie("token");
+  await BlackListedToken.create({ token });
+  res.status(200).json(new ApiResponse(200, user, "Logout Successfully!"));
+});
 
 
